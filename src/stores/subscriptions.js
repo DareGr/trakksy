@@ -80,17 +80,35 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         return
       }
 
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('User not authenticated')
+      }
+
+      // Prepare subscription data with user_id
+      const subscriptionData = {
+        ...subscription,
+        user_id: user.id
+      }
+
+      console.log('Attempting to insert subscription:', subscriptionData)
+
       const { data, error: insertError } = await supabase
         .from('subscriptions')
-        .insert([subscription])
+        .insert([subscriptionData])
         .select()
 
-      if (insertError) throw insertError
+      if (insertError) {
+        console.error('Supabase insert error:', insertError)
+        throw insertError
+      }
 
       if (data && data[0]) {
         subscriptions.value.unshift(data[0])
       }
     } catch (err) {
+      console.error('Error adding subscription:', err)
       error.value = err.message
       throw err
     } finally {

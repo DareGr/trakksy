@@ -148,14 +148,12 @@ const handleSaveSubscription = async (subscriptionData) => {
     if (editingSubscription.value) {
       await subscriptionsStore.updateSubscription(editingSubscription.value.id, subscriptionData)
     } else {
-      await subscriptionsStore.addSubscription({
-        ...subscriptionData,
-        user_id: authStore.user?.id || 'demo-user'
-      })
+      await subscriptionsStore.addSubscription(subscriptionData)
     }
     closeModal()
   } catch (error) {
-    alert('Failed to save subscription. Please try again.')
+    console.error('Save subscription error:', error)
+    alert(`Failed to save subscription: ${error.message}`)
   }
 }
 

@@ -18,9 +18,18 @@ CREATE TABLE subscriptions (
 -- Enable Row Level Security
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
--- Create policy to allow users to only see their own subscriptions
-CREATE POLICY "Users can only see their own subscriptions" ON subscriptions
-  FOR ALL USING (auth.uid() = user_id);
+-- Create policies for different operations
+CREATE POLICY "Users can view their own subscriptions" ON subscriptions
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own subscriptions" ON subscriptions
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own subscriptions" ON subscriptions
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own subscriptions" ON subscriptions
+  FOR DELETE USING (auth.uid() = user_id);
 
 -- Create indexes for better performance
 CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
