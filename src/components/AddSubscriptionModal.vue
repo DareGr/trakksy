@@ -51,17 +51,17 @@
                 </div>
               </label>
 
-              <!-- Predefined Services Option -->
+              <!-- Database Services Option -->
               <label class="relative cursor-pointer">
                 <input
                   v-model="serviceType"
                   type="radio"
-                  value="predefined"
+                  value="database"
                   class="sr-only"
                 />
                 <div :class="[
                   'p-4 border-2 rounded-lg transition-all',
-                  serviceType === 'predefined' 
+                  serviceType === 'database' 
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
                     : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                 ]">
@@ -80,17 +80,20 @@
               </label>
             </div>
 
-            <!-- Predefined Services Grid -->
-            <div v-if="serviceType === 'predefined'" class="mb-6">
-              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+            <!-- Database Services Grid -->
+            <div v-if="serviceType === 'database'" class="mb-6">
+              <div v-if="servicesStore.loading" class="text-center py-4">
+                <div class="text-gray-500 dark:text-gray-400">Loading services...</div>
+              </div>
+              <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
                 <button
-                  v-for="service in predefinedServices"
-                  :key="service.name"
+                  v-for="service in servicesStore.services"
+                  :key="service.id"
                   type="button"
-                  @click="selectPredefinedService(service)"
+                  @click="selectDatabaseService(service)"
                   :class="[
                     'p-3 border-2 rounded-lg text-left transition-all hover:border-blue-300',
-                    selectedService?.name === service.name 
+                    selectedService?.id === service.id 
                       ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
                       : 'border-gray-200 dark:border-gray-600'
                   ]"
@@ -122,7 +125,8 @@
               v-model="form.name"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              :readonly="serviceType === 'database' && selectedService"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
               placeholder="e.g., Netflix, Spotify, Adobe Creative Cloud"
             />
           </div>
@@ -191,8 +195,8 @@
             />
           </div>
 
-          <!-- Favicon URL -->
-          <div>
+          <!-- Favicon URL (only for custom services) -->
+          <div v-if="serviceType === 'custom' || isEditing">
             <label for="favicon_url" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Icon URL (Optional)
             </label>
@@ -243,7 +247,7 @@
 
 <script setup>
 import { reactive, computed, onMounted, ref } from 'vue'
-import { predefinedServices } from '../data/predefinedServices'
+import { useServicesStore } from '../stores/services'
 
 const props = defineProps({
   subscription: {
@@ -254,6 +258,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'save'])
 
+const servicesStore = useServicesStore()
 const isEditing = computed(() => !!props.subscription)
 const serviceType = ref('custom')
 const selectedService = ref(null)
@@ -265,15 +270,18 @@ const form = reactive({
   next_billing_date: '',
   tag: '',
   notes: '',
-  favicon_url: ''
+  favicon_url: '',
+  service_id: null
 })
 
-const selectPredefinedService = (service) => {
+const selectDatabaseService = (service) => {
   selectedService.value = service
   form.name = service.name
   form.amount = service.suggested_price
   form.tag = service.category
-  form.favicon_url = service.favicon_url
+  form.service_id = service.id
+  // Clear favicon_url since we're using a database service
+  form.favicon_url = ''
 }
 
 const handleImageError = (event) => {
@@ -289,13 +297,19 @@ const handleSubmit = () => {
     next_billing_date: form.next_billing_date,
     tag: form.tag || null,
     notes: form.notes.trim() || null,
-    favicon_url: form.favicon_url || null
+    // Only include service_id if it's a database service
+    service_id: serviceType.value === 'database' ? form.service_id : null,
+    // Only include favicon_url for custom services
+    favicon_url: serviceType.value === 'custom' || isEditing.value ? (form.favicon_url || null) : null
   }
 
   emit('save', subscriptionData)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Fetch services for the dropdown
+  await servicesStore.fetchServices()
+
   if (props.subscription) {
     // Populate form with existing subscription data
     form.name = props.subscription.name || ''
@@ -305,6 +319,7 @@ onMounted(() => {
     form.tag = props.subscription.tag || ''
     form.notes = props.subscription.notes || ''
     form.favicon_url = props.subscription.favicon_url || ''
+    form.service_id = props.subscription.service_id || null
   } else {
     // Set default next billing date to next month
     const nextMonth = new Date()

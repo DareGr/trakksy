@@ -63,30 +63,41 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         return
       }
 
-      // Fetch subscriptions with service data using LEFT JOIN
-      const { data, error: fetchError } = await supabase
+      // First fetch subscriptions
+      const { data: subsData, error: fetchError } = await supabase
         .from('subscriptions')
-        .select(`
-          *,
-          services (
-            id,
-            name,
-            favicon_url,
-            category
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
 
-      // Transform data to flatten service information
-      subscriptions.value = (data || []).map(sub => ({
-        ...sub,
-        // Use service data if available, otherwise use subscription's custom data
-        display_name: sub.services?.name || sub.name,
-        display_favicon: sub.services?.favicon_url || sub.favicon_url,
-        display_category: sub.services?.category || sub.tag
-      }))
+      // Then fetch services separately
+      const { data: servicesData, error: servicesError } = await supabase
+        .from('services')
+        .select('*')
+
+      if (servicesError) {
+        console.warn('Could not fetch services:', servicesError.message)
+      }
+
+      // Create a services lookup map
+      const servicesMap = (servicesData || []).reduce((map, service) => {
+        map[service.id] = service
+        return map
+      }, {})
+
+      // Transform data to include service information
+      subscriptions.value = (subsData || []).map(sub => {
+        const service = sub.service_id ? servicesMap[sub.service_id] : null
+        return {
+          ...sub,
+          // Use service data if available, otherwise use subscription's custom data
+          display_name: service?.name || sub.name,
+          display_favicon: service?.favicon_url || sub.favicon_url,
+          display_category: service?.category || sub.tag,
+          service_data: service
+        }
+      })
     } catch (err) {
       error.value = err.message
       console.error('Error fetching subscriptions:', err)
@@ -129,15 +140,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
       const { data, error: insertError } = await supabase
         .from('subscriptions')
         .insert([finalSubscriptionData])
-        .select(`
-          *,
-          services (
-            id,
-            name,
-            favicon_url,
-            category
-          )
-        `)
+        .select()
 
       if (insertError) {
         console.error('Supabase insert error:', insertError)
@@ -145,11 +148,23 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
       }
 
       if (data && data[0]) {
+        // If there's a service_id, fetch the service data
+        let serviceData = null
+        if (data[0].service_id) {
+          const { data: service } = await supabase
+            .from('services')
+            .select('*')
+            .eq('id', data[0].service_id)
+            .single()
+          serviceData = service
+        }
+
         const transformedSub = {
           ...data[0],
-          display_name: data[0].services?.name || data[0].name,
-          display_favicon: data[0].services?.favicon_url || data[0].favicon_url,
-          display_category: data[0].services?.category || data[0].tag
+          display_name: serviceData?.name || data[0].name,
+          display_favicon: serviceData?.favicon_url || data[0].favicon_url,
+          display_category: serviceData?.category || data[0].tag,
+          service_data: serviceData
         }
         subscriptions.value.unshift(transformedSub)
       }
@@ -180,24 +195,28 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         .from('subscriptions')
         .update(updates)
         .eq('id', id)
-        .select(`
-          *,
-          services (
-            id,
-            name,
-            favicon_url,
-            category
-          )
-        `)
+        .select()
 
       if (updateError) throw updateError
 
       if (data && data[0]) {
+        // If there's a service_id, fetch the service data
+        let serviceData = null
+        if (data[0].service_id) {
+          const { data: service } = await supabase
+            .from('services')
+            .select('*')
+            .eq('id', data[0].service_id)
+            .single()
+          serviceData = service
+        }
+
         const transformedSub = {
           ...data[0],
-          display_name: data[0].services?.name || data[0].name,
-          display_favicon: data[0].services?.favicon_url || data[0].favicon_url,
-          display_category: data[0].services?.category || data[0].tag
+          display_name: serviceData?.name || data[0].name,
+          display_favicon: serviceData?.favicon_url || data[0].favicon_url,
+          display_category: serviceData?.category || data[0].tag,
+          service_data: serviceData
         }
         const index = subscriptions.value.findIndex(sub => sub.id === id)
         if (index !== -1) {

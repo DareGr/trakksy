@@ -4,9 +4,9 @@
       <div class="flex-1">
         <div class="flex items-center mb-2">
           <img 
-            v-if="subscription.favicon_url"
-            :src="subscription.favicon_url" 
-            :alt="subscription.name"
+            v-if="subscription.display_favicon || subscription.favicon_url"
+            :src="subscription.display_favicon || subscription.favicon_url" 
+            :alt="subscription.display_name || subscription.name"
             class="w-6 h-6 rounded mr-3"
             @error="handleImageError"
           />
@@ -15,7 +15,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{{ subscription.name }}</h4>
+          <h4 class="text-lg font-semibold text-gray-900 dark:text-white">{{ subscription.display_name || subscription.name }}</h4>
         </div>
         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2">
           ${{ parseFloat(subscription.amount).toFixed(2) }}
@@ -55,15 +55,21 @@
         </span>
       </div>
       
-      <div v-if="subscription.tag" class="flex justify-between items-center">
+      <div v-if="subscription.display_category || subscription.tag" class="flex justify-between items-center">
         <span class="text-sm text-gray-500 dark:text-gray-400">Category</span>
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-          {{ subscription.tag }}
+          {{ subscription.display_category || subscription.tag }}
         </span>
       </div>
       
       <div v-if="subscription.notes" class="pt-2">
         <p class="text-sm text-gray-600 dark:text-gray-300">{{ subscription.notes }}</p>
+      </div>
+      
+      <!-- Service Type Indicator -->
+      <div v-if="subscription.service_id" class="flex items-center pt-1">
+        <div class="h-2 w-2 rounded-full bg-green-500 mr-2"></div>
+        <span class="text-xs text-green-600 dark:text-green-400">Database Service</span>
       </div>
       
       <!-- Billing status indicator -->

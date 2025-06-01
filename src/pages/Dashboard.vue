@@ -142,6 +142,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useSubscriptionsStore } from '../stores/subscriptions'
+import { useServicesStore } from '../stores/services'
 import { useDarkMode } from '../composables/useDarkMode'
 import SubscriptionCard from '../components/SubscriptionCard.vue'
 import AddSubscriptionModal from '../components/AddSubscriptionModal.vue'
@@ -150,6 +151,7 @@ import Toast from '../components/Toast.vue'
 
 const authStore = useAuthStore()
 const subscriptionsStore = useSubscriptionsStore()
+const servicesStore = useServicesStore()
 const { isDark, toggleDarkMode } = useDarkMode()
 
 const showAddModal = ref(false)
@@ -177,9 +179,9 @@ const handleDeleteConfirmation = async () => {
   
   try {
     await subscriptionsStore.deleteSubscription(subscriptionToDelete.value.id)
-    showToast('Success', `${subscriptionToDelete.value.name} has been deleted.`, 'success')
+    showToast('Success', `${subscriptionToDelete.value.display_name || subscriptionToDelete.value.name} has been deleted.`, 'success')
   } catch (error) {
-    showToast('Error', `Failed to delete ${subscriptionToDelete.value.name}. Please try again.`, 'error')
+    showToast('Error', `Failed to delete ${subscriptionToDelete.value.display_name || subscriptionToDelete.value.name}. Please try again.`, 'error')
   } finally {
     subscriptionToDelete.value = null
   }
@@ -222,7 +224,11 @@ const removeToast = (id) => {
   }
 }
 
-onMounted(() => {
-  subscriptionsStore.fetchSubscriptions()
+onMounted(async () => {
+  // Fetch both subscriptions and services
+  await Promise.all([
+    subscriptionsStore.fetchSubscriptions(),
+    servicesStore.fetchServices()
+  ])
 })
 </script> 
