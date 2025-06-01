@@ -4,7 +4,7 @@
     <header class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Trakky</h1>
+          <h1 class="text-2xl font-bold text-gray-900">Trakksy</h1>
           <p class="text-sm text-gray-600">Welcome back, {{ userEmail }}</p>
         </div>
         <div class="flex items-center space-x-3">
