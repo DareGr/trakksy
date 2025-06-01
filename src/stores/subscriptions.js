@@ -129,10 +129,23 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         throw new Error('User not authenticated')
       }
 
-      // Prepare subscription data with user_id
+      // Prepare subscription data with user_id, removing null/empty values
       const finalSubscriptionData = {
-        ...subscriptionData,
-        user_id: user.id
+        user_id: user.id,
+        name: subscriptionData.name,
+        amount: subscriptionData.amount,
+        billing_cycle: subscriptionData.billing_cycle,
+        next_billing_date: subscriptionData.next_billing_date
+      }
+
+      // Only add optional fields if they have values
+      if (subscriptionData.tag) finalSubscriptionData.tag = subscriptionData.tag
+      if (subscriptionData.notes) finalSubscriptionData.notes = subscriptionData.notes
+      if (subscriptionData.service_id) finalSubscriptionData.service_id = subscriptionData.service_id
+      
+      // Only add favicon_url if it exists and has a value (for custom services)
+      if (subscriptionData.favicon_url) {
+        finalSubscriptionData.favicon_url = subscriptionData.favicon_url
       }
 
       console.log('Attempting to insert subscription:', finalSubscriptionData)
@@ -191,9 +204,25 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         return
       }
 
+      // Prepare update data, removing null/empty values
+      const updateData = {}
+      
+      if (updates.name !== undefined) updateData.name = updates.name
+      if (updates.amount !== undefined) updateData.amount = updates.amount
+      if (updates.billing_cycle !== undefined) updateData.billing_cycle = updates.billing_cycle
+      if (updates.next_billing_date !== undefined) updateData.next_billing_date = updates.next_billing_date
+      if (updates.tag !== undefined) updateData.tag = updates.tag
+      if (updates.notes !== undefined) updateData.notes = updates.notes
+      if (updates.service_id !== undefined) updateData.service_id = updates.service_id
+      
+      // Only add favicon_url if it's provided and has a value
+      if (updates.favicon_url !== undefined && updates.favicon_url) {
+        updateData.favicon_url = updates.favicon_url
+      }
+
       const { data, error: updateError } = await supabase
         .from('subscriptions')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
 
