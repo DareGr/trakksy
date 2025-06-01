@@ -1,20 +1,34 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">Trakksy</h1>
-          <p class="text-sm text-gray-600">Welcome back, {{ userEmail }}</p>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Trakksy</h1>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Welcome back, {{ userEmail }}</p>
         </div>
         <div class="flex items-center space-x-3">
-          <router-link v-if="!authStore.hasValidCredentials" to="/login" class="btn-secondary text-sm">
+          <!-- Dark Mode Toggle -->
+          <button
+            @click="toggleDarkMode"
+            class="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            title="Toggle dark mode"
+          >
+            <svg v-if="isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
+          
+          <router-link v-if="!authStore.hasValidCredentials" to="/login" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
             Setup Supabase
           </router-link>
           <button
             v-if="authStore.user"
             @click="authStore.logout"
-            class="btn-secondary text-sm"
+            class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
           >
             Logout
           </button>
@@ -23,7 +37,7 @@
     </header>
 
     <!-- Demo Notice -->
-    <div v-if="!authStore.hasValidCredentials" class="bg-blue-50 border-b border-blue-200">
+    <div v-if="!authStore.hasValidCredentials" class="bg-blue-50 dark:bg-blue-900/30 border-b border-blue-200 dark:border-blue-800">
       <div class="max-w-4xl mx-auto px-4 py-3">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -32,7 +46,7 @@
             </svg>
           </div>
           <div class="ml-3">
-            <p class="text-sm text-blue-700">
+            <p class="text-sm text-blue-700 dark:text-blue-300">
               <strong>Demo Mode:</strong> You're viewing sample data. 
               <router-link to="/login" class="underline font-medium">Configure Supabase</router-link> 
               to enable authentication and data persistence.
@@ -45,13 +59,13 @@
     <!-- Main Content -->
     <main class="max-w-4xl mx-auto px-4 py-8">
       <!-- Total Monthly Spend -->
-      <div class="card p-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8 shadow-sm border border-gray-200 dark:border-gray-700">
         <div class="text-center">
-          <h2 class="text-lg font-medium text-gray-700 mb-2">Total Monthly Spend</h2>
-          <div class="text-4xl font-bold text-primary-600">
+          <h2 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Total Monthly Spend</h2>
+          <div class="text-4xl font-bold text-blue-600 dark:text-blue-400">
             ${{ subscriptionsStore.totalMonthlySpend.toFixed(2) }}
           </div>
-          <p class="text-sm text-gray-500 mt-2">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
             {{ subscriptionsStore.subscriptions.length }} active subscription{{ subscriptionsStore.subscriptions.length !== 1 ? 's' : '' }}
           </p>
         </div>
@@ -59,10 +73,10 @@
 
       <!-- Add Subscription Button -->
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-semibold text-gray-900">Your Subscriptions</h3>
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Your Subscriptions</h3>
         <button
           @click="showAddModal = true"
-          class="btn-primary"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
           + Add Subscription
         </button>
@@ -70,14 +84,14 @@
 
       <!-- Subscriptions List -->
       <div v-if="subscriptionsStore.loading" class="text-center py-8">
-        <div class="text-gray-500">Loading subscriptions...</div>
+        <div class="text-gray-500 dark:text-gray-400">Loading subscriptions...</div>
       </div>
 
       <div v-else-if="subscriptionsStore.subscriptions.length === 0" class="text-center py-12">
-        <div class="text-gray-500 mb-4">No subscriptions yet</div>
+        <div class="text-gray-500 dark:text-gray-400 mb-4">No subscriptions yet</div>
         <button
           @click="showAddModal = true"
-          class="btn-primary"
+          class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
           Add Your First Subscription
         </button>
@@ -89,7 +103,7 @@
           :key="subscription.id"
           :subscription="subscription"
           @edit="editSubscription"
-          @delete="deleteSubscription"
+          @delete="showDeleteConfirmation"
         />
       </div>
     </main>
@@ -101,6 +115,26 @@
       @close="closeModal"
       @save="handleSaveSubscription"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmationModal
+      v-if="subscriptionToDelete"
+      :title="`Delete ${subscriptionToDelete.name}?`"
+      :message="`Are you sure you want to delete this subscription? This action cannot be undone.`"
+      confirm-text="Delete"
+      @confirm="handleDeleteConfirmation"
+      @cancel="cancelDelete"
+    />
+
+    <!-- Toast Notifications -->
+    <Toast
+      v-for="toast in toasts"
+      :key="toast.id"
+      :title="toast.title"
+      :message="toast.message"
+      :type="toast.type"
+      @close="removeToast(toast.id)"
+    />
   </div>
 </template>
 
@@ -108,14 +142,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useSubscriptionsStore } from '../stores/subscriptions'
+import { useDarkMode } from '../composables/useDarkMode'
 import SubscriptionCard from '../components/SubscriptionCard.vue'
 import AddSubscriptionModal from '../components/AddSubscriptionModal.vue'
+import ConfirmationModal from '../components/ConfirmationModal.vue'
+import Toast from '../components/Toast.vue'
 
 const authStore = useAuthStore()
 const subscriptionsStore = useSubscriptionsStore()
+const { isDark, toggleDarkMode } = useDarkMode()
 
 const showAddModal = ref(false)
 const editingSubscription = ref(null)
+const subscriptionToDelete = ref(null)
+const toasts = ref([])
 
 const userEmail = computed(() => {
   if (!authStore.hasValidCredentials) {
@@ -128,14 +168,25 @@ const editSubscription = (subscription) => {
   editingSubscription.value = subscription
 }
 
-const deleteSubscription = async (subscription) => {
-  if (confirm(`Are you sure you want to delete ${subscription.name}?`)) {
-    try {
-      await subscriptionsStore.deleteSubscription(subscription.id)
-    } catch (error) {
-      alert('Failed to delete subscription. Please try again.')
-    }
+const showDeleteConfirmation = (subscription) => {
+  subscriptionToDelete.value = subscription
+}
+
+const handleDeleteConfirmation = async () => {
+  if (!subscriptionToDelete.value) return
+  
+  try {
+    await subscriptionsStore.deleteSubscription(subscriptionToDelete.value.id)
+    showToast('Success', `${subscriptionToDelete.value.name} has been deleted.`, 'success')
+  } catch (error) {
+    showToast('Error', `Failed to delete ${subscriptionToDelete.value.name}. Please try again.`, 'error')
+  } finally {
+    subscriptionToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  subscriptionToDelete.value = null
 }
 
 const closeModal = () => {
@@ -147,13 +198,27 @@ const handleSaveSubscription = async (subscriptionData) => {
   try {
     if (editingSubscription.value) {
       await subscriptionsStore.updateSubscription(editingSubscription.value.id, subscriptionData)
+      showToast('Success', `${subscriptionData.name} has been updated.`, 'success')
     } else {
       await subscriptionsStore.addSubscription(subscriptionData)
+      showToast('Success', `${subscriptionData.name} has been added to your subscriptions.`, 'success')
     }
     closeModal()
   } catch (error) {
     console.error('Save subscription error:', error)
-    alert(`Failed to save subscription: ${error.message}`)
+    showToast('Error', `Failed to save subscription: ${error.message}`, 'error')
+  }
+}
+
+const showToast = (title, message, type) => {
+  const id = Date.now()
+  toasts.value.push({ id, title, message, type })
+}
+
+const removeToast = (id) => {
+  const index = toasts.value.findIndex(toast => toast.id === id)
+  if (index > -1) {
+    toasts.value.splice(index, 1)
   }
 }
 

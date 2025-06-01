@@ -33,7 +33,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             billing_cycle: 'monthly',
             next_billing_date: '2024-02-15',
             tag: 'Entertainment',
-            notes: 'Standard plan'
+            notes: 'Standard plan',
+            favicon_url: 'https://assets.nflxext.com/us/ffe/siteui/common/icons/nficon2016.ico',
+            service_id: null
           },
           {
             id: 'demo-2',
@@ -42,20 +44,49 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
             billing_cycle: 'monthly',
             next_billing_date: '2024-02-10',
             tag: 'Music',
-            notes: 'Premium subscription'
+            notes: 'Premium subscription',
+            favicon_url: 'https://open.spotify.com/favicon.ico',
+            service_id: null
+          },
+          {
+            id: 'demo-3',
+            name: 'Adobe Creative Cloud',
+            amount: 52.99,
+            billing_cycle: 'monthly',
+            next_billing_date: '2024-03-01',
+            tag: 'Productivity',
+            notes: 'All apps plan',
+            favicon_url: 'https://www.adobe.com/favicon.ico',
+            service_id: null
           }
         ]
         return
       }
 
+      // Fetch subscriptions with service data using LEFT JOIN
       const { data, error: fetchError } = await supabase
         .from('subscriptions')
-        .select('*')
+        .select(`
+          *,
+          services (
+            id,
+            name,
+            favicon_url,
+            category
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (fetchError) throw fetchError
 
-      subscriptions.value = data || []
+      // Transform data to flatten service information
+      subscriptions.value = (data || []).map(sub => ({
+        ...sub,
+        // Use service data if available, otherwise use subscription's custom data
+        display_name: sub.services?.name || sub.name,
+        display_favicon: sub.services?.favicon_url || sub.favicon_url,
+        display_category: sub.services?.category || sub.tag
+      }))
     } catch (err) {
       error.value = err.message
       console.error('Error fetching subscriptions:', err)
@@ -64,7 +95,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
   }
 
-  const addSubscription = async (subscription) => {
+  const addSubscription = async (subscriptionData) => {
     try {
       loading.value = true
       error.value = null
@@ -72,9 +103,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
       if (!hasValidCredentials) {
         // Add to demo data
         const newSub = {
-          ...subscription,
+          ...subscriptionData,
           id: 'demo-' + Date.now(),
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          service_id: null
         }
         subscriptions.value.unshift(newSub)
         return
@@ -87,17 +119,25 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
       }
 
       // Prepare subscription data with user_id
-      const subscriptionData = {
-        ...subscription,
+      const finalSubscriptionData = {
+        ...subscriptionData,
         user_id: user.id
       }
 
-      console.log('Attempting to insert subscription:', subscriptionData)
+      console.log('Attempting to insert subscription:', finalSubscriptionData)
 
       const { data, error: insertError } = await supabase
         .from('subscriptions')
-        .insert([subscriptionData])
-        .select()
+        .insert([finalSubscriptionData])
+        .select(`
+          *,
+          services (
+            id,
+            name,
+            favicon_url,
+            category
+          )
+        `)
 
       if (insertError) {
         console.error('Supabase insert error:', insertError)
@@ -105,7 +145,13 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
       }
 
       if (data && data[0]) {
-        subscriptions.value.unshift(data[0])
+        const transformedSub = {
+          ...data[0],
+          display_name: data[0].services?.name || data[0].name,
+          display_favicon: data[0].services?.favicon_url || data[0].favicon_url,
+          display_category: data[0].services?.category || data[0].tag
+        }
+        subscriptions.value.unshift(transformedSub)
       }
     } catch (err) {
       console.error('Error adding subscription:', err)
@@ -134,14 +180,28 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         .from('subscriptions')
         .update(updates)
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          services (
+            id,
+            name,
+            favicon_url,
+            category
+          )
+        `)
 
       if (updateError) throw updateError
 
       if (data && data[0]) {
+        const transformedSub = {
+          ...data[0],
+          display_name: data[0].services?.name || data[0].name,
+          display_favicon: data[0].services?.favicon_url || data[0].favicon_url,
+          display_category: data[0].services?.category || data[0].tag
+        }
         const index = subscriptions.value.findIndex(sub => sub.id === id)
         if (index !== -1) {
-          subscriptions.value[index] = data[0]
+          subscriptions.value[index] = transformedSub
         }
       }
     } catch (err) {

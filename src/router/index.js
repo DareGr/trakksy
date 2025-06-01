@@ -22,7 +22,7 @@ const routes = [
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../pages/Dashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: false }
   }
 ]
 
@@ -35,18 +35,34 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   
   // If Supabase is not configured, allow access to dashboard for demo
-  if (!authStore.hasValidCredentials && to.path === '/dashboard') {
-    next()
-    return
+  if (!authStore.hasValidCredentials) {
+    if (to.path === '/dashboard') {
+      next()
+      return
+    }
+    // Redirect to dashboard if trying to access login/register without Supabase
+    if (to.meta.requiresGuest) {
+      next('/dashboard')
+      return
+    }
   }
   
-  if (to.meta.requiresAuth && !authStore.user) {
-    next('/login')
-  } else if (to.meta.requiresGuest && authStore.user) {
-    next('/dashboard')
-  } else {
-    next()
+  // Normal auth flow when Supabase is configured
+  if (authStore.hasValidCredentials) {
+    // Redirect authenticated users away from login/register
+    if (to.meta.requiresGuest && authStore.user) {
+      next('/dashboard')
+      return
+    }
+    
+    // Redirect unauthenticated users to login for protected routes
+    if (to.meta.requiresAuth && !authStore.user) {
+      next('/login')
+      return
+    }
   }
+  
+  next()
 })
 
 export default router 
